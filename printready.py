@@ -51,13 +51,14 @@ def scrape_tags(url: str, include_images: bool) -> tuple[str, list[tuple[str, st
     for tag in soup.find_all(["nav", "header", "footer", "tbody"]):
         tag.decompose()
 
+    # Mostly site specific, add sections here that you want to skip printing. 
     SKIP_SECTIONS = {
         "references", "bibliography", "ancestry", "see also",
         "external links", "notes", "further reading", "footnotes",
         "sources", "citations", "citation", "source",
     }
 
-    tags = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "tr", "img"])
+    tags = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "tr", "img"]) #include text within these tags 
     results = []
     skip = False
     for tag in tags:
@@ -110,6 +111,7 @@ def save_pdf(items: list, output_path: str) -> None:
                             leftMargin=inch, rightMargin=inch,
                             topMargin=inch, bottomMargin=inch)
     story = []
+    # For image processing 
     for tag_name, content in items:
         if tag_name == "img":
             try:
@@ -151,11 +153,22 @@ if __name__ == "__main__":
     parser.add_argument("--images", action="store_true", help="Include images (converted to greyscale)")
     args = parser.parse_args()
 
-    title, items = scrape_tags(args.url, include_images=args.images)
+    try:
+        title, items = scrape_tags(args.url, include_images=args.images)
+    except requests.exceptions.MissingSchema:
+        print(f"Error: '{args.url}' is not a valid URL. Make sure it starts with http:// or https:// | Copy everything in the address bar.")
+        sys.exit(1)
+    except requests.exceptions.ConnectionError:
+        print(f"Error: Could not connect to '{args.url}'. Check the URL or your internet connection.")
+        sys.exit(1)
+    except requests.exceptions.HTTPError as e:
+        print(f"Error: The page returned an error ({e.response.status_code}). The website likely prevents bots from viewing the page, sorry.")
+        sys.exit(1)
+    except requests.exceptions.Timeout:
+        print(f"Error: The request to '{args.url}' timed out. The server may be slow or unreachable.")
+        sys.exit(1)
 
-    for tag_name, content in items:
-        if tag_name != "img":
-            print(content)
+    
 
     desktop = os.path.join(os.path.expanduser("~"), "Desktop", f"{title}.pdf") #save it to desktop
     save_pdf(items, desktop)
