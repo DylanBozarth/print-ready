@@ -51,7 +51,7 @@ def scrape_tags(url: str, include_images: bool) -> tuple[str, list[tuple[str, st
     for tag in soup.find_all(["nav", "header", "footer", "tbody"]):
         tag.decompose()
 
-    # Mostly site specific, add sections here that you want to skip printing. 
+    # Mostly site specific, add sections here that you want to skip printing. Case insensitive. 
     SKIP_SECTIONS = {
         "references", "bibliography", "ancestry", "see also",
         "external links", "notes", "further reading", "footnotes",
@@ -98,6 +98,7 @@ def scrape_tags(url: str, include_images: bool) -> tuple[str, list[tuple[str, st
 
 def save_pdf(items: list, output_path: str) -> None:
     styles = getSampleStyleSheet()
+    # Preserve formatting on title parts 
     heading_styles = {
         "h1": styles["h1"],
         "h2": styles["h2"],
@@ -169,7 +170,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     
-
-    desktop = os.path.join(os.path.expanduser("~"), "Desktop", f"{title}.pdf") #save it to desktop
+    # This should work on all 3 OS options. 
+    desktop_dir = os.path.join(os.path.expanduser("~"), "Desktop") #save it to desktop as default
+    output_dir = desktop_dir if os.path.isdir(desktop_dir) else os.path.expanduser("~")
+    desktop = os.path.join(output_dir, f"{title}.pdf") 
     save_pdf(items, desktop)
     print(f"\nPDF saved to: {desktop}")
